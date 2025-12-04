@@ -159,25 +159,41 @@ Through AIC/BIC-based forward selection, we choose only the most predictive vari
 
 We implement **direct multi-step forecasting** rather than 1-step ahead:
 
-- **7-Day Model**: Predicts stock index value 7 days into the future
+**Target Variable: Log Returns**
+
+Instead of predicting index levels, we forecast **log returns**:
+- Formula: `log_return = ln(P_t+h / P_t)`
+- Convert to %: `pct_return = exp(log_return) - 1`
+- **Stationary by nature** (no differencing needed)
+- **Time-additive** (7-day log return = sum of daily log returns)
+- **Standard in quant finance** (better statistical properties)
+
+**Forecast Horizons:**
+
+- **7-Day Model**: Predicts 7-day log return (e.g., "expected +2.8% return")
   - Use case: Short-term trading strategies, options positioning
   - Expected accuracy: Highest among the three horizons
 
-- **14-Day Model**: Predicts stock index value 14 days ahead
+- **14-Day Model**: Predicts 14-day log return
   - Use case: Medium-term portfolio adjustments, swing trading
   - Expected accuracy: Moderate (natural degradation with longer horizon)
 
-- **30-Day Model**: Predicts stock index value 30 days ahead
+- **30-Day Model**: Predicts 30-day log return
   - Use case: Strategic allocation decisions, trend identification
   - Expected accuracy: Lower but still actionable for trend direction
 
 ### Model Architecture
 
-**SARIMAX(1, 1, 1) x (0, 0, 0, 0)**
+**SARIMAX(1, 0, 1) x (0, 0, 0, 0)**
 - AR(1): Autoregressive component captures momentum
-- I(1): First-order differencing for stationarity
+- **I(0): No differencing** - log returns are already stationary
 - MA(1): Moving average component for shock absorption
 - No seasonality: Daily data doesn't exhibit strong seasonal patterns
+
+**Why I(0) instead of I(1)?**
+- Index levels need differencing (I=1) to become stationary
+- Log returns are already stationary, so I=0
+- Simpler model with better interpretation
 
 ### Evaluation Metrics
 
