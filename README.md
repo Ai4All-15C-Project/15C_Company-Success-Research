@@ -1,35 +1,41 @@
-# 15C_Company-Success-Research-
+# AI Tech Sector Forecasting Research
 
-# Tech Stock Data - SARIMAX Forecasting
+## Project Overview
 
-## Overview
-
-This dataset contains 22 tech company stocks and 60+ exogenous variables for time series forecasting using SARIMAX.
+This project analyzes and forecasts the AI/Tech sector using a custom-built **AI Tech Index** representing 24 major technology companies. The analysis includes comprehensive EDA, time series modeling with SARIMAX, and evaluation of forecasting limitations.
 
 **Date Range:** 2019-01-01 to 2025-11-21  
-**Frequency:** Daily (includes weekends - will need cleaning)  
-**Companies:** All public before 2019 (5+ years of history)
+**Frequency:** Daily (weekends removed)  
+**Target Variable:** AI Tech Index (normalized equal-weighted average of 24 companies)
+
+---
+
+## Key Findings
+
+### 1. Model Performance
+- **Rolling 1-Step-Ahead R²:** 0.9726 (97.26%)
+- **Long-Horizon Forecast R²:** -1.95 (model fails for multi-step forecasts)
+- **Key Insight:** High R² for 1-step forecasts is largely due to autocorrelation, not predictive power
+
+### 2. Regime Shift Detection
+The model identified a **regime shift in 2025** where the AI tech sector reached all-time highs beyond the training data range. This is a fundamental limitation of statistical time series models - they cannot extrapolate to new market regimes.
+
+### 3. Exogeneity Problem Solved
+We explicitly **avoided using SP500/NASDAQ** as predictors because our target contains the same stocks (NVDA, AMD, MSFT, GOOGL, AAPL, etc.). Using them would be circular reasoning.
 
 ---
 
 ## Data Structure
 
-### Stock Tickers (22)
+### AI Tech Index Components (24 Companies)
 
-**Semiconductors/Hardware:**
-- NVDA, AMD, INTC
-
-**Cloud/SaaS:**
-- GOOGL, MSFT, CRM, ORCL, NOW, OKTA
-
-**Cybersecurity:**
-- ZS, CRWD, NET
-
-**Big Tech:**
-- AAPL, META, AMZN, IBM
-
-**Software/Other:**
-- ADBE, SHOP, SQ, TWLO, MDB, DDOG
+| Sector | Companies |
+|--------|-----------|
+| **AI Hardware** | NVDA, AMD, INTC |
+| **Cloud/AI Services** | GOOGL, MSFT, CRM, ORCL, NOW |
+| **Cybersecurity** | OKTA, ZS, CRWD, NET, PANW |
+| **Big Tech** | AAPL, META, AMZN, IBM |
+| **Software/SaaS** | ADBE, SHOP, TWLO, MDB, DDOG, PYPL, ANET |
 
 ### Exogenous Variables (60+)
 
@@ -54,47 +60,113 @@ This dataset contains 22 tech company stocks and 60+ exogenous variables for tim
 **Crypto (3):**
 - Bitcoin, Ethereum, Crypto_Tech_Corr_20d
 
-**International Tech (8):**
-- Taiwan_ETF, Japan_ETF, South_Korea_ETF, China_Large_Cap_ETF
-- ASML, TSM, BABA, BIDU
-
-**Risk Indicators (5):**
-- High_Yield_Bonds, Investment_Grade_Bonds, Long_Term_Treasury
-- Emerging_Markets_Bonds, Real_Estate_ETF
-
-**Volatility Metrics (5):**
-- High_Volatility_Regime, Extreme_Fear, VIX_MA20, VIX_vs_MA, Vol_of_Vol_Ratio
-
-**Technical Indicators (5):**
-- Semi_vs_Tech_Ratio, Small_vs_Large_Caps, NASDAQ_MA5, NASDAQ_MA20, NASDAQ_Momentum
+**SEC Fundamentals (Sector-Level):**
+- Sector_Profit_Margin, Sector_ROE, Sector_Revenue_Growth, Sector_Asset_Turnover
 
 **Regime Indicators (5):**
 - Pandemic_Period, AI_Boom_Period, Fed_Hike_Period, Tech_Bear_2022, Banking_Crisis_2023
 
-**Temporal Features (10):**
-- Day_of_Week, Day_of_Month, Week_of_Year, Month, Quarter, Year
-- Is_Month_End, Is_Quarter_End, Earnings_Season, Options_Expiry_Week
+---
+
+## EDA Notebook Analysis
+
+### Part 1: Exploratory Data Analysis
+
+1. **Univariate Analysis** - Distribution and summary statistics of all variables
+2. **Bivariate Analysis** - Stock performance comparisons by sector
+3. **Multivariate Analysis** - Correlation heatmaps and regime analysis
+4. **Time Series Analysis** - Stationarity testing (ADF), ACF/PACF plots
+5. **SEC Fundamentals** - Sector-level financial metrics analysis
+
+### Part 2: SARIMAX Model Development
+
+1. **Data Preparation** - Target and exogenous variable selection
+2. **Multicollinearity Check** - VIF analysis (removed features with VIF > 10)
+3. **Train-Test Split** - 90% training, 10% testing
+4. **Model Fit** - SARIMAX(1,1,1) and SARIMAX(2,1,2) comparison
+5. **Model Diagnostics** - Residual analysis, Ljung-Box test, Jarque-Bera test
+6. **Anomaly Detection** - Isolation Forest on residuals
+
+### Part 3: Forecast Evaluation
+
+1. **Long-Horizon Forecast** - Multi-step ahead predictions (failed due to regime shift)
+2. **Rolling 1-Step-Ahead** - Re-fit model daily (R² = 0.97)
+3. **Regime Shift Analysis** - Identified extrapolation problem in 2025 data
 
 ---
 
-## Key Variables for SARIMAX
+## Key Methodological Decisions
 
-### High Priority (Leading Indicators)
+### Why We Use Truly Exogenous Variables
 
-1. **Yield_Curve_Slope** - Leading recession indicator
-2. **Vol_of_Vol_Ratio** - Market uncertainty measure
-3. **Semi_vs_Tech_Ratio** - AI hardware strength relative to broader tech
-4. **Crypto_Tech_Corr_20d** - Risk sentiment correlation
-5. **Small_vs_Large_Caps** - Market breadth indicator
-6. **Gold_Oil_Ratio** - Macro sentiment (fear vs growth)
+**Problem:** Our AI Tech Index contains stocks like NVDA, MSFT, GOOGL, AAPL, etc. These same stocks are major components of the S&P 500 and NASDAQ indices.
 
-### Medium Priority
+**Solution:** We use only **truly exogenous** variables:
+- **VIX** - Market volatility/fear (sentiment, not prices)
+- **Treasury_10Y** - Interest rate environment (monetary policy)
+- **Yield_Curve_Slope** - Economic outlook indicator
+- **SEC Fundamentals** - Company financial health metrics
 
-7. VIX - Volatility index
-8. Dollar_Strength - USD relative strength
-9. Credit_Spread_Proxy - Credit market stress
-10. AI_Boom_Period - Post-ChatGPT regime
-11. Fed_Hike_Period - Rate sensitivity
-12. NASDAQ_Momentum - Short-term tech momentum
+### Why Rolling Forecasts Work Better
+
+| Approach | R² | Why |
+|----------|-----|-----|
+| Long-Horizon | -1.95 | Model cannot extrapolate beyond training data range |
+| Rolling 1-Step | 0.97 | Model re-fits daily with new information |
+
+**Caveat:** The high R² for 1-step forecasts is largely due to autocorrelation (today ≈ yesterday). A naive baseline would also perform well.
 
 ---
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `EDA_Company Data.ipynb` | Main analysis notebook with EDA and SARIMAX modeling |
+| `Datasets/Tech_Stock_Data_SEC_Cleaned_SARIMAX.csv` | Full cleaned dataset with all features |
+| `Datasets/SARIMAX_Exogenous_Features.csv` | Selected exogenous variables for modeling |
+| `Datasets/Tech_Stock_Data_with_SEC_Fundamentals.csv` | Dataset with SEC fundamental data |
+| `clean_sec_fundamentals.py` | Script to clean SEC data |
+| `gen_company_data.py` | Script to generate company data |
+| `requirements.txt` | Python dependencies |
+
+---
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Requirements
+- pandas
+- numpy
+- matplotlib
+- seaborn
+- statsmodels
+- scikit-learn
+
+---
+
+## Future Work
+
+1. **Naive Baseline Comparison** - Compare SARIMAX to simple persistence model
+2. **Multi-Step Forecasting** - Evaluate 5, 10, 30-day ahead predictions
+3. **Return Prediction** - Forecast returns instead of levels (lower autocorrelation)
+4. **Alternative Models** - Prophet, LSTM, XGBoost for comparison
+5. **Regime-Switching Models** - Handle different market conditions
+6. **Directional Accuracy** - Measure ability to predict up/down movements
+
+---
+
+## Conclusions
+
+1. **SARIMAX is effective for 1-step-ahead forecasting** but the high R² is partially due to autocorrelation in price data.
+
+2. **Long-horizon forecasting fails** when the market enters a new regime (2025 AI boom) beyond the training data range.
+
+3. **Truly exogenous variables** (VIX, interest rates, SEC fundamentals) provide legitimate predictive signal without data leakage.
+
+4. **Rolling forecasts are essential** for real-world deployment - the model must be re-fit as new data arrives.
+
+5. **Statistical models have fundamental limitations** for financial forecasting - they cannot predict regime changes or black swan events.
